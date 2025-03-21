@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bitcoin Preis-Quiz</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="data/btc.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background-color: #f5f5f5;
+        overflow: hidden;
+      }
+
+      header {
+        background-color: #1a1a1a;
+        color: white;
+        padding: 1rem;
+        text-align: center;
+        position: fixed;
+        width: 100%;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .score {
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+
+      .card-container {
+        height: 100vh;
+        width: 100vw;
+        padding: 80px 20px 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+      }
+
+      .card {
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 800px;
+        padding: 20px;
+        position: absolute;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+        touch-action: none;
+      }
+
+      .chart-container {
+        width: 100%;
+        height: 400px;
+        margin-bottom: 20px;
+      }
+
+      .buttons {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 20px;
+      }
+
+      button {
+        padding: 12px 40px;
+        border: none;
+        border-radius: 50px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .up-btn {
+        background-color: #4caf50;
+        color: white;
+      }
+
+      .down-btn {
+        background-color: #f44336;
+        color: white;
+      }
+
+      button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      .score-animation {
+        position: absolute;
+        font-size: 2rem;
+        font-weight: bold;
+        opacity: 0;
+        animation: scorePopup 1.5s ease-out;
+      }
+
+      @keyframes scorePopup {
+        0% {
+          opacity: 0;
+          transform: translateY(0);
+        }
+        20% {
+          opacity: 1;
+        }
+        80% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+          transform: translateY(-50px);
+        }
+      }
+
+      .correct {
+        background-color: rgba(76, 175, 80, 0.1);
+        border: 2px solid #4caf50;
+      }
+
+      .incorrect {
+        background-color: rgba(244, 67, 54, 0.1);
+        border: 2px solid #f44336;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Bitcoin Preis-Quiz</h1>
+      <div class="score">Punkte: <span id="score">0</span></div>
+    </header>
+
+    <div class="card-container" id="cardContainer"></div>
+
+    <script>
+      let score = 0;
+      let currentCard = null;
+      let isDragging = false;
+      let startX, startY, offsetX, offsetY;
+
+      // Funktion zum Erstellen einer neuen Karte
+      function createNewCard() {
+        // Zufälligen Bereich aus den BTC-Daten auswählen
+        const minDataPoints = 30; // Mindestanzahl an Datenpunkten
+        const maxDataPoints = 60; // Maximalanzahl an Datenpunkten
+
+        const dataPoints =
+          Math.floor(Math.random() * (maxDataPoints - minDataPoints + 1)) +
+          minDataPoints;
+        const startIndex = Math.floor(
+          Math.random() * (btcData.length - dataPoints)
+        );
+
+        const selectedData = btcData.slice(startIndex, startIndex + dataPoints);
+
+        // Die letzten 10% der Daten für die Vorhersage verwenden
+        const visibleDataCount = Math.floor(selectedData.length * 0.9);
+        const visibleData = selectedData.slice(0, visibleDataCount);
+        const hiddenData = selectedData.slice(visibleDataCount);
+
+        // Bestimmen, ob der Kurs steigt oder fällt
+        const lastVisiblePrice = visibleData[visibleData.length - 1][1];
+        const lastHiddenPrice = hiddenData[hiddenData.length - 1][1];
+        const isUp = lastHiddenPrice > lastVisiblePrice;
+
+        // Karte erstellen
+        const card = document.createElement("div");
+        card.className = "card";
+        card.dataset.isUp = isUp;
+
+        // Chart-Container erstellen
+        const chartContainer = document.createElement("div");
+        chartContainer.className = "chart-container";
+
+        const canvas = document.createElement("canvas");
+        chartContainer.appendChild(canvas);
+        card.appendChild(chartContainer);
+
+        // Buttons erstellen
+        const buttonsDiv = document.createElement("div");
+        buttonsDiv.className = "buttons";
+
+        const upButton = document.createElement("button");
+        upButton.className = "up-btn";
+        upButton.textContent = "UP";
+        upButton.addEventListener("click", () =>
+          handlePrediction(true, card, selectedData)
+        );
+
+        const downButton = document.createElement("button");
+        downButton.className = "down-btn";
+        downButton.textContent = "DOWN";
+        downButton.addEventListener("click", () =>
+          handlePrediction(false, card, selectedData)
+        );
+
+        buttonsDiv.appendChild(upButton);
+        buttonsDiv.appendChild(downButton);
+        card.appendChild(buttonsDiv);
+
+        // Karte zum Container hinzufügen
+        document.getElementById("cardContainer").appendChild(card);
+
+        // Chart erstellen
+        const ctx = canvas.getContext("2d");
+        const chart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: selectedData.map((d) => d[0]), // Alle Labels anzeigen
+            datasets: [
+              {
+                label: "Bitcoin Preis (USD)",
+                data: selectedData.map((d, index) => {
+                  // Nur Daten für den sichtbaren Bereich zurückgeben, für den Rest null
+                  return index < visibleDataCount ? d[1] : null;
+                }),
+                borderColor: "#F7931A",
+                backgroundColor: "rgba(247, 147, 26, 0.1)",
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: true,
+                tension: 0.1,
+                spanGaps: false, // Wichtig: Lücken nicht verbinden
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                grid: {
+                  display: false,
+                },
+                ticks: {
+                  maxRotation: 45,
+                  minRotation: 45,
+                  maxTicksLimit: 8,
+                },
+              },
+              y: {
+                grid: {
+                  color: "rgba(0, 0, 0, 0.05)",
+                },
+                beginAtZero: true,
+                ticks: {
+                  callback: function (value) {
+                    return "$" + value.toLocaleString();
+                  },
+                },
+              },
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    return "Preis: $" + context.parsed.y.toLocaleString();
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        // Drag-Funktionalität hinzufügen
+        card.addEventListener("mousedown", startDrag);
+        card.addEventListener("touchstart", startDrag, { passive: true });
+
+        currentCard = card;
+        card.chart = chart;
+        card.selectedData = selectedData;
+
+        return card;
+      }
+
+      // Funktion zur Behandlung der Vorhersage
+      function handlePrediction(predictedUp, card, fullData) {
+        const isUp = card.dataset.isUp === "true";
+        const isCorrect = predictedUp === isUp;
+
+        // Punkte aktualisieren
+        if (isCorrect) {
+          score++;
+          showScoreAnimation("+1", true);
+          card.classList.add("correct");
+        } else {
+          score--;
+          showScoreAnimation("-1", false);
+          card.classList.add("incorrect");
+        }
+
+        document.getElementById("score").textContent = score;
+
+        // Vollständigen Chart anzeigen
+        updateChartWithFullData(card.chart, fullData);
+
+        // Buttons deaktivieren
+        const buttons = card.querySelectorAll("button");
+        buttons.forEach((btn) => {
+          btn.disabled = true;
+          btn.style.opacity = 0.5;
+        });
+
+        // Event-Listener für Swipe hinzufügen
+        document.addEventListener("mousemove", moveDrag);
+        document.addEventListener("touchmove", moveDrag, { passive: false });
+        document.addEventListener("mouseup", endDrag);
+        document.addEventListener("touchend", endDrag);
+      }
+
+      // Funktion zum Aktualisieren des Charts mit vollständigen Daten
+      function updateChartWithFullData(chart, fullData) {
+        chart.data.labels = fullData.map((d) => d[0]);
+        chart.data.datasets[0].data = fullData.map((d) => d[1]);
+        chart.update();
+      }
+
+      // Funktion zum Anzeigen der Punkteanimation
+      function showScoreAnimation(text, isPositive) {
+        const animation = document.createElement("div");
+        animation.className = "score-animation";
+        animation.textContent = text;
+        animation.style.color = isPositive ? "#4CAF50" : "#F44336";
+        animation.style.left = `${window.innerWidth / 2}px`;
+        animation.style.top = `${window.innerHeight / 2}px`;
+
+        document.body.appendChild(animation);
+
+        setTimeout(() => {
+          animation.remove();
+        }, 1500);
+      }
+
+      // Drag-Funktionen
+      function startDrag(e) {
+        // Nur Drag erlauben, wenn die Karte bereits beantwortet wurde
+        if (
+          !currentCard.classList.contains("correct") &&
+          !currentCard.classList.contains("incorrect")
+        ) {
+          return;
+        }
+
+        isDragging = true;
+
+        if (e.type === "touchstart") {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        } else {
+          startX = e.clientX;
+          startY = e.clientY;
+        }
+
+        offsetX = 0;
+        offsetY = 0;
+
+        // Event-Listener für Bewegung und Ende hinzufügen
+        document.addEventListener("mousemove", moveDrag);
+        document.addEventListener("touchmove", moveDrag, { passive: false });
+        document.addEventListener("mouseup", endDrag);
+        document.addEventListener("touchend", endDrag);
+      }
+
+      function moveDrag(e) {
+        if (!isDragging) return;
+
+        let currentX, currentY;
+
+        if (e.type === "touchmove") {
+          currentX = e.touches[0].clientX;
+          currentY = e.touches[0].clientY;
+          e.preventDefault();
+        } else {
+          currentX = e.clientX;
+          currentY = e.clientY;
+        }
+
+        offsetX = currentX - startX;
+        offsetY = currentY - startY;
+
+        currentCard.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${
+          offsetX * 0.05
+        }deg)`;
+
+        // Transparenz basierend auf der Entfernung
+        const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+        const opacity = Math.max(0, 1 - distance / 500);
+        currentCard.style.opacity = opacity;
+      }
+
+      function endDrag() {
+        if (!isDragging) return;
+
+        isDragging = false;
+
+        // Event-Listener entfernen, aber nicht komplett
+        document.removeEventListener("mousemove", moveDrag);
+        document.removeEventListener("touchmove", moveDrag);
+        document.removeEventListener("mouseup", endDrag);
+        document.removeEventListener("touchend", endDrag);
+
+        const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+
+        if (distance > 100) {
+          // Karte wegwerfen
+          const direction = offsetX > 0 ? 1 : -1;
+          currentCard.style.transform = `translate(${
+            direction * window.innerWidth
+          }px, ${offsetY}px) rotate(${direction * 90}deg)`;
+          currentCard.style.opacity = 0;
+
+          setTimeout(() => {
+            currentCard.remove();
+            createNewCard();
+          }, 300);
+        } else {
+          // Karte zurücksetzen
+          currentCard.style.transform = "translate(0, 0) rotate(0)";
+          currentCard.style.opacity = 1;
+
+          // Wichtig: Die Karte bleibt weiterhin ziehbar, auch wenn sie zurückgesetzt wurde
+          // Wir entfernen keine Event-Listener vom currentCard Element selbst
+        }
+      }
+
+      // Erste Karte erstellen
+      createNewCard();
+    </script>
+  </body>
+</html>
