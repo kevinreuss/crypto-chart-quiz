@@ -111,8 +111,19 @@
         color: white;
       }
 
+      .next-btn {
+        background-color: #2196f3;
+        color: white;
+        display: none;
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 20;
+      }
+
       button:hover {
-        transform: translateY(-3px);
+        /* transform: translateY(-3px); */
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
       }
 
@@ -170,7 +181,7 @@
       let isDragging = false;
       let startX, startY, offsetX, offsetY;
       let timerInterval = null;
-      let timeLeft = 5;
+      let timeLeft = 10;
 
       // Lade den Score aus dem localStorage beim Start
       function loadScore() {
@@ -376,7 +387,7 @@
       function startTimer(card, selectedData) {
         // Timer zurücksetzen
         clearInterval(timerInterval);
-        timeLeft = 5;
+        timeLeft = 10;
 
         const timerElement = card.querySelector(".timer");
         timerElement.textContent = timeLeft;
@@ -441,6 +452,9 @@
           btn.style.opacity = 0.5;
         });
 
+        // Next-Button anzeigen
+        showNextButton();
+
         // Event-Listener für Swipe hinzufügen
         document.addEventListener("mousemove", moveDrag);
         document.addEventListener("touchmove", moveDrag, { passive: false });
@@ -469,6 +483,50 @@
         setTimeout(() => {
           animation.remove();
         }, 1500);
+      }
+
+      // Funktion zum Anzeigen des Next-Buttons
+      function showNextButton() {
+        // Prüfen, ob bereits ein Next-Button existiert
+        let nextButton = document.querySelector(".next-btn");
+
+        if (!nextButton) {
+          nextButton = document.createElement("button");
+          nextButton.className = "next-btn";
+          nextButton.textContent = "Next";
+          nextButton.addEventListener("click", () => {
+            // Karte mit Animation entfernen
+            animateCardAway();
+          });
+          document.body.appendChild(nextButton);
+        }
+
+        // Button anzeigen
+        nextButton.style.display = "block";
+      }
+
+      // Funktion zum Animieren der Karte weg
+      function animateCardAway() {
+        // Zufällige Richtung wählen (links oder rechts)
+        const direction = Math.random() > 0.5 ? 1 : -1;
+
+        currentCard.style.transform = `translate(${
+          direction * window.innerWidth
+        }px, ${Math.random() * 100 - 50}px) rotate(${direction * 90}deg)`;
+        currentCard.style.opacity = 0;
+
+        // Next-Button ausblenden
+        const nextButton = document.querySelector(".next-btn");
+        if (nextButton) {
+          nextButton.style.display = "none";
+        }
+
+        setTimeout(() => {
+          currentCard.remove();
+          // Timer zurücksetzen und neue Karte erstellen
+          timeLeft = 10;
+          createNewCard();
+        }, 300);
       }
 
       // Drag-Funktionen
@@ -549,10 +607,16 @@
           }px, ${offsetY}px) rotate(${direction * 90}deg)`;
           currentCard.style.opacity = 0;
 
+          // Next-Button ausblenden
+          const nextButton = document.querySelector(".next-btn");
+          if (nextButton) {
+            nextButton.style.display = "none";
+          }
+
           setTimeout(() => {
             currentCard.remove();
             // Timer zurücksetzen und neue Karte erstellen
-            timeLeft = 5;
+            timeLeft = 10;
             createNewCard();
           }, 300);
         } else {
