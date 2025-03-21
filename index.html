@@ -14,7 +14,7 @@
 </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bitcoin Preis-Quiz</title>
+    <title>Bitcoin Chart Quiz</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="data/btc.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -445,7 +445,7 @@
             labels: selectedData.map((d) => d[0]), // Alle Labels anzeigen
             datasets: [
               {
-                label: "Bitcoin Preis (USD)",
+                label: "Bitcoin Price (USD)",
                 data: selectedData.map((d, index) => {
                   // Nur Daten für den sichtbaren Bereich zurückgeben, für den Rest null
                   return index < visibleDataCount ? d[1] : null;
@@ -532,7 +532,7 @@
               tooltip: {
                 callbacks: {
                   label: function (context) {
-                    return "Preis: $" + context.parsed.y.toLocaleString();
+                    return "Price: $" + context.parsed.y.toLocaleString();
                   },
                 },
               },
