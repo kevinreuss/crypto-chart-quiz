@@ -48,6 +48,25 @@
         position: relative;
       }
 
+      .timer {
+        position: absolute;
+        top: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 2rem;
+        font-weight: bold;
+        color: #1a1a1a;
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 5;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+      }
+
       .card {
         background-color: white;
         border-radius: 15px;
@@ -150,6 +169,8 @@
       let currentCard = null;
       let isDragging = false;
       let startX, startY, offsetX, offsetY;
+      let timerInterval = null;
+      let timeLeft = 5;
 
       // Lade den Score aus dem localStorage beim Start
       function loadScore() {
@@ -194,6 +215,12 @@
         const card = document.createElement("div");
         card.className = "card";
         card.dataset.isUp = isUp;
+
+        // Timer erstellen
+        const timerElement = document.createElement("div");
+        timerElement.className = "timer";
+        timerElement.textContent = timeLeft;
+        card.appendChild(timerElement);
 
         // Chart-Container erstellen
         const chartContainer = document.createElement("div");
@@ -339,11 +366,54 @@
         card.chart = chart;
         card.selectedData = selectedData;
 
+        // Timer starten
+        startTimer(card, selectedData);
+
         return card;
+      }
+
+      // Funktion zum Starten des Timers
+      function startTimer(card, selectedData) {
+        // Timer zurücksetzen
+        clearInterval(timerInterval);
+        timeLeft = 5;
+
+        const timerElement = card.querySelector(".timer");
+        timerElement.textContent = timeLeft;
+
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          timerElement.textContent = timeLeft;
+
+          // Farbe ändern, wenn wenig Zeit übrig ist
+          if (timeLeft <= 2) {
+            timerElement.style.color = "#F44336";
+          }
+
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            // Zeit abgelaufen - als falsche Antwort werten
+            if (
+              !card.classList.contains("correct") &&
+              !card.classList.contains("incorrect")
+            ) {
+              handlePrediction(false, card, selectedData);
+            }
+          }
+        }, 1000);
       }
 
       // Funktion zur Behandlung der Vorhersage
       function handlePrediction(predictedUp, card, fullData) {
+        // Timer stoppen
+        clearInterval(timerInterval);
+
+        // Timer-Element ausblenden
+        const timerElement = card.querySelector(".timer");
+        if (timerElement) {
+          timerElement.style.display = "none";
+        }
+
         const isUp = card.dataset.isUp === "true";
         const isCorrect = predictedUp === isUp;
 
@@ -481,6 +551,8 @@
 
           setTimeout(() => {
             currentCard.remove();
+            // Timer zurücksetzen und neue Karte erstellen
+            timeLeft = 5;
             createNewCard();
           }, 300);
         } else {
