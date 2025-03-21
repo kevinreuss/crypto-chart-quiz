@@ -6,6 +6,7 @@
     <title>Bitcoin Preis-Quiz</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="data/btc.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
       * {
         margin: 0;
@@ -165,13 +166,172 @@
         background-color: rgba(244, 67, 54, 0.1);
         border: 2px solid #f44336;
       }
+
+      /* Onboarding overlay styles */
+      .onboarding-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.85);
+        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .onboarding-content {
+        background-color: white;
+        border-radius: 15px;
+        padding: 20px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        text-align: center;
+      }
+
+      .onboarding-content h2 {
+        color: #4caf50;
+        margin-bottom: 15px;
+        font-size: 24px;
+      }
+
+      .onboarding-content h3 {
+        margin: 20px 0 15px;
+        font-size: 18px;
+      }
+
+      .onboarding-intro {
+        margin-bottom: 20px;
+        line-height: 1.5;
+      }
+
+      .swipe-instructions {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        margin: 25px 0;
+      }
+
+      .swipe-instruction {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .swipe-arrow {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 18px;
+      }
+
+      .swipe-up {
+        background-color: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+      }
+
+      .swipe-down {
+        background-color: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+      }
+
+      .swipe-text {
+        text-align: left;
+        font-size: 16px;
+        flex: 1;
+      }
+
+      .beta-notice {
+        font-style: italic;
+        color: #666;
+        margin: 20px 0;
+        font-size: 14px;
+      }
+
+      .onboarding-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 25px;
+      }
+
+      .onboarding-button {
+        padding: 10px 20px;
+        border-radius: 5px;
+        border: none;
+        font-weight: 500;
+        cursor: pointer;
+        font-size: 16px;
+        background-color: white;
+        color: #1a1a1a;
+        border: 1px solid #666;
+      }
+
+      .primary-button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+      }
     </style>
   </head>
   <body>
     <header>
-      <h3>Crypto Chart Quiz</h3>
+      <h3>Bitcoin Chart Quiz</h3>
       <div class="score">Points: <span id="score">0</span></div>
     </header>
+
+    <!-- Add the onboarding overlay -->
+    <div class="onboarding-overlay" id="onboardingOverlay">
+      <div class="onboarding-content">
+        <h2>Welcome to the Bitcoin Chart Quiz!</h2>
+        <p class="onboarding-intro">
+          Test your BTC price prediction skills:
+          <ol style="text-align: left; margin-top: 10px; margin-left: 20px; display: flex; flex-direction: column;">
+            <li>View historical Bitcoin price charts between 2 random dates</li>
+            <li>Predict if the price will go <b>UP</b> or <b>DOWN</b> in the missing end</li>
+            <li>Earn points for correct predictions, lose points for wrong predictions</li>
+          </ol>
+        </p>
+
+        <h3>How to play:</h3>
+
+        <div class="swipe-instructions">
+          <div class="swipe-instruction">
+            <div class="swipe-arrow swipe-up">
+              <i class="fas fa-arrow-up"></i>
+            </div>
+            <div class="swipe-text">Click <b>UP</b> if you think the price will rise</div>
+          </div>
+
+          <div class="swipe-instruction">
+            <div class="swipe-arrow swipe-down">
+              <i class="fas fa-arrow-down"></i>
+            </div>
+            <div class="swipe-text">Click <b>DOWN</b> if you think the price will fall</div>
+          </div>
+        </div>
+
+        <p class="onboarding-intro">
+          You have to answer within 10 seconds, otherwise you lose points.
+        </p>
+
+        <p class="beta-notice">
+          This is an early version. Have fun testing your prediction skills!
+        </p>
+
+        <div class="onboarding-buttons">
+          <button id="onboardingOk" class="onboarding-button">OK</button>
+          <button id="onboardingDontShow" class="onboarding-button primary-button">
+            OK, Don't Show Again
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div class="card-container" id="cardContainer"></div>
 
@@ -629,9 +789,36 @@
         }
       }
 
-      // Erste Karte erstellen
-      loadScore(); // Score beim Laden der Seite laden
-      createNewCard();
+      // Check if onboarding should be shown
+      function checkOnboarding() {
+        const onboardingDismissed = localStorage.getItem("cryptoChartQuiz_onboardingDismissed");
+        const onboardingOverlay = document.getElementById("onboardingOverlay");
+        const onboardingOkBtn = document.getElementById("onboardingOk");
+        const onboardingDontShowBtn = document.getElementById("onboardingDontShow");
+
+        if (onboardingDismissed === "true") {
+          onboardingOverlay.style.display = "none";
+        } else {
+          onboardingOverlay.style.display = "flex";
+
+          // Add event listeners for onboarding buttons
+          onboardingOkBtn.addEventListener("click", () => {
+            onboardingOverlay.style.display = "none";
+          });
+
+          onboardingDontShowBtn.addEventListener("click", () => {
+            localStorage.setItem("cryptoChartQuiz_onboardingDismissed", "true");
+            onboardingOverlay.style.display = "none";
+          });
+        }
+      }
+      
+      // Call checkOnboarding when the page loads
+      document.addEventListener("DOMContentLoaded", function() {
+        loadScore();
+        createNewCard();
+        checkOnboarding();
+      });
     </script>
   </body>
 </html>
