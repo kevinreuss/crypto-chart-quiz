@@ -248,7 +248,49 @@
                 ticks: {
                   maxRotation: 45,
                   minRotation: 45,
-                  maxTicksLimit: 8,
+                  font: {
+                    size: 14,
+                    weight: "bold",
+                  },
+                  autoSkip: false,
+                  callback: function (value, index, values) {
+                    // Nur drei spezifische Datumspunkte anzeigen
+                    if (
+                      index === 0 ||
+                      index === visibleDataCount - 1 ||
+                      index === selectedData.length - 1
+                    ) {
+                      // Datum formatieren
+                      const dateStr = selectedData[index][0];
+                      const date = new Date(dateStr);
+
+                      // Monatsnamen
+                      const months = [
+                        "Jan",
+                        "Feb",
+                        "Mar",
+                        "Apr",
+                        "May",
+                        "Jun",
+                        "Jul",
+                        "Aug",
+                        "Sep",
+                        "Oct",
+                        "Nov",
+                        "Dec",
+                      ];
+
+                      // Formatiertes Datum: "Mar 10, 2024"
+                      return (
+                        months[date.getMonth()] +
+                        " " +
+                        date.getDate() +
+                        ", " +
+                        date.getFullYear()
+                      );
+                    }
+                    return ""; // Alle anderen Datumspunkte ausblenden
+                  },
                 },
               },
               y: {
