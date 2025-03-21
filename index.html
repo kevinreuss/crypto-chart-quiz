@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="de">
   <head>
+    <!-- Hotjar Tracking Code for BtcChartQuiz -->
+<script>
+    (function(h,o,t,j,a,r){
+        h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+        h._hjSettings={hjid:5346852,hjsv:6};
+        a=o.getElementsByTagName('head')[0];
+        r=o.createElement('script');r.async=1;
+        r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+        a.appendChild(r);
+    })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+</script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bitcoin Preis-Quiz</title>
@@ -537,8 +548,11 @@
         card.chart = chart;
         card.selectedData = selectedData;
 
-        // Timer starten
-        startTimer(card, selectedData);
+        // Timer nur starten, wenn das Onboarding nicht angezeigt wird
+        const onboardingOverlay = document.getElementById("onboardingOverlay");
+        if (onboardingOverlay.style.display === "none") {
+          startTimer(card, selectedData);
+        }
 
         return card;
       }
@@ -798,17 +812,29 @@
 
         if (onboardingDismissed === "true") {
           onboardingOverlay.style.display = "none";
+          // Start timer immediately if onboarding is dismissed
+          if (currentCard) {
+            startTimer(currentCard, currentCard.selectedData);
+          }
         } else {
           onboardingOverlay.style.display = "flex";
 
           // Add event listeners for onboarding buttons
           onboardingOkBtn.addEventListener("click", () => {
             onboardingOverlay.style.display = "none";
+            // Start timer when onboarding is closed
+            if (currentCard) {
+              startTimer(currentCard, currentCard.selectedData);
+            }
           });
 
           onboardingDontShowBtn.addEventListener("click", () => {
             localStorage.setItem("cryptoChartQuiz_onboardingDismissed", "true");
             onboardingOverlay.style.display = "none";
+            // Start timer when onboarding is closed
+            if (currentCard) {
+              startTimer(currentCard, currentCard.selectedData);
+            }
           });
         }
       }
