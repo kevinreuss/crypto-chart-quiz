@@ -151,6 +151,20 @@
       let isDragging = false;
       let startX, startY, offsetX, offsetY;
 
+      // Lade den Score aus dem localStorage beim Start
+      function loadScore() {
+        const savedScore = localStorage.getItem("cryptoChartQuizScore");
+        if (savedScore !== null) {
+          score = parseInt(savedScore);
+          document.getElementById("score").textContent = score;
+        }
+      }
+
+      // Speichere den Score im localStorage
+      function saveScore() {
+        localStorage.setItem("cryptoChartQuizScore", score);
+      }
+
       // Funktion zum Erstellen einer neuen Karte
       function createNewCard() {
         // Zufälligen Bereich aus den BTC-Daten auswählen
@@ -345,6 +359,7 @@
         }
 
         document.getElementById("score").textContent = score;
+        saveScore(); // Score speichern nach jeder Änderung
 
         // Vollständigen Chart anzeigen
         updateChartWithFullData(card.chart, fullData);
@@ -479,6 +494,7 @@
       }
 
       // Erste Karte erstellen
+      loadScore(); // Score beim Laden der Seite laden
       createNewCard();
     </script>
   </body>
