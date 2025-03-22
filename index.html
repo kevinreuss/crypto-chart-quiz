@@ -577,13 +577,8 @@
 
           if (timeLeft <= 0) {
             clearInterval(timerInterval);
-            // Zeit abgelaufen - als falsche Antwort werten
-            if (
-              !card.classList.contains("correct") &&
-              !card.classList.contains("incorrect")
-            ) {
-              handlePrediction(false, card, selectedData);
-            }
+            // Zeit abgelaufen - immer als falsche Antwort werten, unabhängig vom tatsächlichen Kursverlauf
+            handleTimeExpired(card, selectedData);
           }
         }, 1000);
       }
@@ -612,6 +607,45 @@
           showScoreAnimation("-1", false);
           card.classList.add("incorrect");
         }
+
+        document.getElementById("score").textContent = score;
+        saveScore(); // Score speichern nach jeder Änderung
+
+        // Vollständigen Chart anzeigen
+        updateChartWithFullData(card.chart, fullData);
+
+        // Buttons deaktivieren
+        const buttons = card.querySelectorAll("button");
+        buttons.forEach((btn) => {
+          btn.disabled = true;
+          btn.style.opacity = 0.5;
+        });
+
+        // Next-Button anzeigen
+        showNextButton();
+
+        // Event-Listener für Swipe hinzufügen
+        document.addEventListener("mousemove", moveDrag);
+        document.addEventListener("touchmove", moveDrag, { passive: false });
+        document.addEventListener("mouseup", endDrag);
+        document.addEventListener("touchend", endDrag);
+      }
+
+      // Neue Funktion für abgelaufene Zeit
+      function handleTimeExpired(card, fullData) {
+        // Timer stoppen
+        clearInterval(timerInterval);
+
+        // Timer-Element ausblenden
+        const timerElement = card.querySelector(".timer");
+        if (timerElement) {
+          timerElement.style.display = "none";
+        }
+
+        // Immer als falsch werten, wenn die Zeit abgelaufen ist
+        score--;
+        showScoreAnimation("-1", false);
+        card.classList.add("incorrect");
 
         document.getElementById("score").textContent = score;
         saveScore(); // Score speichern nach jeder Änderung
